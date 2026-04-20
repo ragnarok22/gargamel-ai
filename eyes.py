@@ -236,10 +236,3 @@ closed_eye = bytearray(
 fb_open = framebuf.FrameBuffer(open_eye, 24, 24, framebuf.MONO_HLSB)
 fb_semi_closed = framebuf.FrameBuffer(semi_closed_eye, 24, 24, framebuf.MONO_HLSB)
 fb_closed = framebuf.FrameBuffer(closed_eye, 24, 24, framebuf.MONO_HLSB)
-
-
-def draw_eyes(oled, frame):
-    oled.fill(0)
-    oled.blit(frame, 20, 20)  # left eye
-    oled.blit(frame, 84, 20)  # right eye
-    oled.show()

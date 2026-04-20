@@ -10,8 +10,7 @@ run: ## Run main.py on the device (does not save it)
 	$(MPREMOTE) mount . run main.py
 
 deploy: ## Copy all .py files to the device filesystem
-	$(MPREMOTE) fs cp main.py :main.py
-	$(MPREMOTE) fs cp eyes.py :eyes.py
+	for f in *.py; do $(MPREMOTE) fs cp $$f :$$f; done
 
 repl: ## Open an interactive MicroPython REPL
 	$(MPREMOTE) repl
