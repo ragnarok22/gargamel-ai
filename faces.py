@@ -11,3 +11,11 @@ neutral = Face([
     (fb_closed,      fb_closed,      LX, RX, Y,   60),
     (fb_semi_closed, fb_semi_closed, LX, RX, Y,   40),
 ])
+
+winky = Face([
+    (fb_open, fb_open,        LX, RX, Y, 1000),
+    (fb_open, fb_semi_closed, LX, RX, Y,   40),
+    (fb_open, fb_closed,      LX, RX, Y,  200),
+    (fb_open, fb_semi_closed, LX, RX, Y,   40),
+    (fb_open, fb_open,        LX, RX, Y, 1000),
+])
