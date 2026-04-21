@@ -1,5 +1,7 @@
 import time
 
+from utils import _ticks_diff
+
 try:
     import network
 except ImportError:
@@ -13,12 +15,6 @@ def _ticks_ms():
     if hasattr(time, "ticks_ms"):
         return time.ticks_ms()
     return int(time.monotonic() * 1000)
-
-
-def _ticks_diff(now, then):
-    if hasattr(time, "ticks_diff"):
-        return time.ticks_diff(now, then)
-    return now - then
 
 
 def _sleep_ms(duration):

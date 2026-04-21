@@ -1,5 +1,7 @@
 import time
 
+from utils import _ticks_diff
+
 try:
     import socket as default_socket
 except ImportError:
@@ -20,12 +22,6 @@ REFRESH_MS = 10 * 60 * 1000
 RETRY_MS = 30 * 1000
 WTTR_FORMAT = "%C|%t|%f|%h"
 MAX_WEATHER_RESPONSE_BYTES = 4096
-
-
-def _ticks_diff(now, then):
-    if hasattr(time, "ticks_diff"):
-        return time.ticks_diff(now, then)
-    return now - then
 
 
 def wttr_url(location=""):
