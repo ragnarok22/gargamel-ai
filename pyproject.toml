@@ -9,3 +9,18 @@ dependencies = [
     "mpremote>=1.28.0",
     "mpy-cross>=1.27.0.post2",
 ]
+
+[dependency-groups]
+dev = [
+    "micropython-esp32-stubs>=1.28.0.post1",
+]
+
+[tool.pyright]
+include = ["."]
+exclude = [".venv", "__pycache__"]
+
+typeCheckingMode = "basic"
+stubPath = "typings"
+typeshedPath = "typings"
+pythonPlatform = "Linux"
+reportMissingModuleSource = "none"
