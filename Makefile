@@ -1,6 +1,7 @@
 PORT ?= /dev/cu.usbserial-0001
 PYTHON ?= python3
 MPREMOTE = uv run mpremote connect $(PORT)
+PY_FILES := $(wildcard *.py)
 
 .PHONY: help run deploy repl ls reset test coverage lint format
 
@@ -11,7 +12,7 @@ run: ## Run main.py on the device (does not save it)
 	$(MPREMOTE) mount . run main.py
 
 deploy: ## Copy all .py files to the device filesystem
-	for f in *.py; do $(MPREMOTE) fs cp $$f :$$f; done
+	$(MPREMOTE) $(foreach f,$(PY_FILES),+ fs cp $(f) :$(f))
 
 repl: ## Open an interactive MicroPython REPL
 	$(MPREMOTE) repl
