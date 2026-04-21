@@ -37,6 +37,18 @@ make ls      # list files on the board
 make reset   # soft-reset the board
 ```
 
+## Weather Setup
+
+The weather screen fetches current conditions from `wttr.in` over WiFi. Create a
+local `config.py` from the example and fill in your network details:
+
+```sh
+cp config.example.py config.py
+```
+
+Set `WTTR_LOCATION` to a city, airport code, or coordinates. Leave it empty to
+let `wttr.in` infer the location from the public IP address.
+
 ## Project Layout
 
 - `main.py`: initializes I2C, creates the OLED display, and plays animations.
