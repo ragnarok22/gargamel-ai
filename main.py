@@ -51,8 +51,10 @@ def request_next_screen():
 def face():
     global active_face_index, idle_face_index
 
-    print(pir.value())
-    if pir.value():
+    is_someone = pir.value() == 1
+    print(f"{'There is someone' if is_someone else 'There is no one'}")
+
+    if is_someone:
         current_face = ACTIVE_FACES[active_face_index]
         active_face_index = (active_face_index + 1) % len(ACTIVE_FACES)
         current_face.animate(oled, should_stop=request_next_screen)
