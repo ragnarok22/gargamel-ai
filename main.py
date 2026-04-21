@@ -60,10 +60,8 @@ def show_weather():
             try:
                 weather_service.refresh(now)
             except Exception as error:
+                print("Weather error:", error)
                 weather_service.set_error(error, now)
-
-    if weather_service.error:
-        print("Weather error:", weather_service.error)
 
     oled.fill(0)
     oled.text("Weather", 0, 0)
