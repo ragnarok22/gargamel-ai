@@ -69,8 +69,14 @@ def connect_wifi():
         draw_message("Weather", "Set config.py", "WIFI_SSID")
         return False
 
-    wlan.active(True)
-    wlan.connect(WIFI_SSID, WIFI_PASSWORD)
+    try:
+        wlan.active(True)
+        wlan.connect(WIFI_SSID, WIFI_PASSWORD)
+    except OSError as error:
+        print("WiFi error:", error)
+        draw_message("Weather", "WiFi failed")
+        return False
+
     draw_message("Weather", "WiFi...", WIFI_SSID)
 
     started = time.ticks_ms()
