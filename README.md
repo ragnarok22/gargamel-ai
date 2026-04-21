@@ -56,6 +56,8 @@ uses the board's built-in BOOT button on `GPIO0`, configured with
 `Pin.PULL_UP`; pressed reads as low. Do not hold BOOT while plugging in or
 resetting the board, because that can enter firmware flashing mode.
 
+![Wiring diagram](docs/wiring.png)
+
 ## Weather Setup
 
 The weather screen fetches current conditions from `wttr.in` over WiFi using a
