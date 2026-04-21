@@ -1,7 +1,9 @@
 import time
+
 import ssd1306
 from machine import I2C, Pin
-from faces import neutral, winky, scary
+
+from faces import neutral, scary, winky
 from weather import WeatherService
 from wifi import connect_wifi
 
@@ -26,15 +28,30 @@ pir = Pin(27, Pin.IN)
 button = Pin(0, Pin.IN, Pin.PULL_UP)
 
 weather_service = WeatherService(WTTR_LOCATION)
+next_screen_requested = False
+
+
+def button_pressed():
+    return not button.value()
+
+
+def request_next_screen():
+    global next_screen_requested
+
+    if button_pressed():
+        next_screen_requested = True
+        return True
+    return False
 
 
 def face():
     print(pir.value())
     if pir.value():
-        scary.animate(oled)
-        winky.animate(oled)
+        if not scary.animate(oled, should_stop=request_next_screen):
+            return
+        winky.animate(oled, should_stop=request_next_screen)
     else:
-        neutral.animate(oled)
+        neutral.animate(oled, should_stop=request_next_screen)
         time.sleep_ms(200)
 
 
@@ -86,16 +103,19 @@ def weather():
 
 
 def main():
+    global next_screen_requested
+
     screens = ["face", "weather"]
     current_screen = 0
     button_was_pressed = False
 
     while True:
-        button_is_pressed = not button.value()
+        button_is_pressed = button_pressed()
         print(f"Button: {button_is_pressed}")
 
-        if button_is_pressed and not button_was_pressed:
+        if next_screen_requested or (button_is_pressed and not button_was_pressed):
             current_screen = (current_screen + 1) % len(screens)
+            next_screen_requested = False
             time.sleep_ms(200)
         button_was_pressed = button_is_pressed
 

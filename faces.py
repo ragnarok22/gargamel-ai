@@ -1,5 +1,5 @@
+from eyes import fb_angry, fb_closed, fb_open, fb_semi_closed
 from face import Face
-from eyes import fb_open, fb_semi_closed, fb_closed, fb_angry
 
 LX = 20
 RX = 84

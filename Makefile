@@ -30,7 +30,7 @@ coverage: ## Run tests with coverage report
 	uv run coverage report -m
 
 lint: ## Lint with ruff
-	uv run ruff check .
+	uv run ruff check . --fix
 
 format: ## Format with ruff
 	uv run ruff format .

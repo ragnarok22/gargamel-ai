@@ -1,6 +1,5 @@
 import framebuf
 
-
 # Open Eye (A complete oval)
 open_eye = bytearray(
     [
