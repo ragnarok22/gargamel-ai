@@ -86,6 +86,18 @@ Deploy both the app files and your local config to the board:
 make deploy
 ```
 
+## Asset Tools
+
+Use these tools when creating new eyes, mouths, or small OLED graphics:
+
+- [Piskel](https://www.piskelapp.com/): draw pixel art and simple animations in
+  the browser, then export frames as PNG files.
+- [image2cpp](https://javl.github.io/image2cpp/): convert PNG assets into byte
+  arrays for monochrome OLED displays.
+
+For this project, keep eye bitmaps at `24x24` pixels and convert them to a
+MicroPython-friendly byte array before adding them to `eyes.py`.
+
 ## Project Layout
 
 - `main.py`: initializes I2C, creates the OLED display, and plays animations.
