@@ -87,6 +87,8 @@ make deploy
 ## Project Layout
 
 - `main.py`: initializes I2C, creates the OLED display, and plays animations.
+- `wifi.py`: connects the ESP32 to WiFi and handles connection failures.
+- `weather.py`: fetches and caches current weather from `wttr.in`.
 - `face.py`: defines the reusable `Face` class.
 - `faces.py`: composes named expressions such as `neutral`, `winky`, and `scary`.
 - `eyes.py`: stores eye bitmap byte arrays and `framebuf.FrameBuffer` objects.
