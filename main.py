@@ -30,8 +30,8 @@ oled = ssd1306.SSD1306_I2C(128, 64, i2c)
 # presence
 pir = Pin(27, Pin.IN)
 
-# button
-button = Pin(26, Pin.IN, Pin.PULL_DOWN)
+# built-in BOOT button
+button = Pin(0, Pin.IN, Pin.PULL_UP)
 
 wlan = network.WLAN(network.STA_IF)
 last_weather_fetch = 0
@@ -158,7 +158,9 @@ def main():
     button_was_pressed = False
 
     while True:
-        button_is_pressed = button.value()
+        button_is_pressed = not button.value()
+        print(f"Button: {button_is_pressed}")
+
         if button_is_pressed and not button_was_pressed:
             current_screen = (current_screen + 1) % len(screens)
             time.sleep_ms(200)

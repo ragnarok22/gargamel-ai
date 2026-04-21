@@ -9,7 +9,7 @@ switch to a weather screen that fetches current conditions from `wttr.in`.
 - A MicroPython-compatible board with I2C support
 - SSD1306 OLED display wired to `scl=Pin(22)` and `sda=Pin(21)`
 - HC-SR501 PIR sensor output wired to `GPIO27`
-- Button wired between `GPIO26` and `3.3V`
+- Built-in BOOT button for switching screens
 - WiFi access for the weather screen
 - [`uv`](https://docs.astral.sh/uv/) for Python tool management
 - USB serial access to the board
@@ -48,12 +48,13 @@ The current pin layout is:
 OLED SCL -> GPIO22
 OLED SDA -> GPIO21
 PIR OUT  -> GPIO27
-Button   -> GPIO26
+BOOT     -> GPIO0
 ```
 
-Use a shared ground rail for the ESP32, OLED, PIR sensor, and button circuit.
-The button input uses `Pin.PULL_DOWN`, so pressing the button should connect
-`GPIO26` to `3.3V`.
+Use a shared ground rail for the ESP32, OLED, and PIR sensor. Screen switching
+uses the board's built-in BOOT button on `GPIO0`, configured with
+`Pin.PULL_UP`; pressed reads as low. Do not hold BOOT while plugging in or
+resetting the board, because that can enter firmware flashing mode.
 
 ## Weather Setup
 
