@@ -33,7 +33,9 @@ def _notify(on_status, title, line_1="", line_2="", line_3=""):
         on_status(title, line_1, line_2, line_3)
 
 
-def connect_wifi(ssid, password, wlan=None, on_status=None, timeout_ms=CONNECT_TIMEOUT_MS):
+def connect_wifi(
+    ssid, password, wlan=None, on_status=None, timeout_ms=CONNECT_TIMEOUT_MS
+):
     if wlan is None:
         if network is None:
             raise RuntimeError("network module missing")

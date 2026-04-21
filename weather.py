@@ -1,6 +1,14 @@
 import time
 
 try:
+    import socket as default_socket
+except ImportError:
+    try:
+        import usocket as default_socket
+    except ImportError:
+        default_socket = None
+
+try:
     import urequests as requests
 except ImportError:
     try:
@@ -25,13 +33,22 @@ def wttr_url(location=""):
     return "http://wttr.in/?format=j1"
 
 
-def fetch_current(location="", requests_module=None):
+def fetch_current(
+    location="",
+    requests_module=None,
+    socket_module=default_socket,
+    timeout_s=8,
+):
     http = requests_module or requests
     if http is None:
         raise RuntimeError("requests missing")
 
     response = None
+    timeout_was_set = False
     try:
+        if timeout_s is not None and hasattr(socket_module, "setdefaulttimeout"):
+            socket_module.setdefaulttimeout(timeout_s)
+            timeout_was_set = True
         response = http.get(wttr_url(location))
         payload = response.json()
         current = payload["current_condition"][0]
@@ -44,6 +61,8 @@ def fetch_current(location="", requests_module=None):
     finally:
         if response:
             response.close()
+        if timeout_was_set:
+            socket_module.setdefaulttimeout(None)
 
 
 class WeatherService:
@@ -51,11 +70,15 @@ class WeatherService:
         self,
         location="",
         requests_module=None,
+        socket_module=default_socket,
+        timeout_s=8,
         refresh_ms=REFRESH_MS,
         retry_ms=RETRY_MS,
     ):
         self.location = location
         self.requests = requests_module
+        self.socket = socket_module
+        self.timeout_s = timeout_s
         self.refresh_ms = refresh_ms
         self.retry_ms = retry_ms
         self.last_attempt = None
@@ -71,7 +94,12 @@ class WeatherService:
 
     def refresh(self, now):
         self.last_attempt = now
-        self.data = fetch_current(self.location, self.requests)
+        self.data = fetch_current(
+            self.location,
+            self.requests,
+            socket_module=self.socket,
+            timeout_s=self.timeout_s,
+        )
         self.error = None
         return self.data
 

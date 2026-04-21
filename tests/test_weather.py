@@ -33,6 +33,14 @@ class FakeRequests:
         return self.response
 
 
+class FakeSocket:
+    def __init__(self):
+        self.timeouts = []
+
+    def setdefaulttimeout(self, timeout):
+        self.timeouts.append(timeout)
+
+
 class WeatherTest(unittest.TestCase):
     def test_wttr_url_uses_location_when_present(self):
         self.assertEqual(
@@ -59,6 +67,14 @@ class WeatherTest(unittest.TestCase):
                 "humidity": "66",
             },
         )
+
+    def test_fetch_current_bounds_request_with_socket_timeout(self):
+        requests = FakeRequests()
+        socket = FakeSocket()
+
+        fetch_current("Santo Domingo", requests, socket_module=socket, timeout_s=8)
+
+        self.assertEqual(socket.timeouts, [8, None])
 
     def test_weather_service_uses_retry_delay_after_error(self):
         service = WeatherService(refresh_ms=1000, retry_ms=100)
