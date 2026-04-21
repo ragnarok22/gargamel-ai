@@ -1,3 +1,4 @@
+import json
 import time
 
 try:
@@ -33,16 +34,17 @@ def wttr_url(location=""):
     return "http://wttr.in/?format=j1"
 
 
-def fetch_current(
-    location="",
-    requests_module=None,
-    socket_module=default_socket,
-    timeout_s=8,
-):
-    http = requests_module or requests
-    if http is None:
-        raise RuntimeError("requests missing")
+def _parse_current(payload):
+    current = payload["current_condition"][0]
+    return {
+        "description": current["weatherDesc"][0]["value"],
+        "temp_c": current["temp_C"],
+        "feels_c": current["FeelsLikeC"],
+        "humidity": current["humidity"],
+    }
 
+
+def _fetch_with_requests(location, http, socket_module=default_socket, timeout_s=8):
     response = None
     timeout_was_set = False
     try:
@@ -50,19 +52,99 @@ def fetch_current(
             socket_module.setdefaulttimeout(timeout_s)
             timeout_was_set = True
         response = http.get(wttr_url(location))
-        payload = response.json()
-        current = payload["current_condition"][0]
-        return {
-            "description": current["weatherDesc"][0]["value"],
-            "temp_c": current["temp_C"],
-            "feels_c": current["FeelsLikeC"],
-            "humidity": current["humidity"],
-        }
+        return _parse_current(response.json())
     finally:
         if response:
             response.close()
         if timeout_was_set:
             socket_module.setdefaulttimeout(None)
+
+
+def _parse_http_url(url):
+    if not url.startswith("http://"):
+        raise ValueError("only http:// URLs are supported")
+
+    host_and_path = url[len("http://") :]
+    if "/" in host_and_path:
+        host, path = host_and_path.split("/", 1)
+        return host, "/" + path
+    return host_and_path, "/"
+
+
+def _socket_write(sock, data):
+    if hasattr(sock, "write"):
+        sock.write(data)
+    else:
+        sock.sendall(data)
+
+
+def _socket_read(sock, size):
+    if hasattr(sock, "read"):
+        return sock.read(size)
+    return sock.recv(size)
+
+
+def _fetch_json_with_socket(url, socket_module=default_socket, timeout_s=8):
+    if socket_module is None:
+        raise RuntimeError("socket module missing")
+
+    host, path = _parse_http_url(url)
+    socket_type = getattr(socket_module, "SOCK_STREAM", 0)
+    address = socket_module.getaddrinfo(host, 80, 0, socket_type)[0][-1]
+    sock = socket_module.socket()
+
+    try:
+        if timeout_s is not None and hasattr(sock, "settimeout"):
+            sock.settimeout(timeout_s)
+
+        sock.connect(address)
+        request = (
+            "GET {} HTTP/1.0\r\n"
+            "Host: {}\r\n"
+            "User-Agent: gargamel-ai\r\n"
+            "Accept: application/json\r\n"
+            "Accept-Encoding: identity\r\n"
+            "Connection: close\r\n\r\n"
+        ).format(path, host)
+        _socket_write(sock, request.encode())
+
+        chunks = []
+        while True:
+            chunk = _socket_read(sock, 512)
+            if not chunk:
+                break
+            if isinstance(chunk, str):
+                chunk = chunk.encode()
+            chunks.append(chunk)
+
+        raw_response = b"".join(chunks)
+    finally:
+        sock.close()
+
+    header_end = raw_response.find(b"\r\n\r\n")
+    if header_end == -1:
+        raise OSError("invalid weather response")
+
+    headers = raw_response[:header_end]
+    body = raw_response[header_end + 4 :]
+    status_line = headers.split(b"\r\n", 1)[0]
+    if b" 200 " not in status_line:
+        raise OSError("weather HTTP error")
+
+    return json.loads(body.decode())
+
+
+def fetch_current(
+    location="",
+    requests_module=None,
+    socket_module=default_socket,
+    timeout_s=8,
+):
+    if requests_module is not None:
+        return _fetch_with_requests(location, requests_module, socket_module, timeout_s)
+
+    payload = _fetch_json_with_socket(wttr_url(location), socket_module, timeout_s)
+    return _parse_current(payload)
 
 
 class WeatherService:
