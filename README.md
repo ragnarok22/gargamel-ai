@@ -1,13 +1,16 @@
 # Gargamel AI
 
-MicroPython face animations for an SSD1306 OLED display. The project renders
-simple eye expressions on a 128x64 screen using `framebuf` assets and a small
-animation abstraction.
+MicroPython face animations for an ESP32 with a 128x64 SSD1306 OLED display.
+The device shows animated expressions, reacts to a PIR presence sensor, and can
+switch to a weather screen that fetches current conditions from `wttr.in`.
 
 ## Requirements
 
 - A MicroPython-compatible board with I2C support
 - SSD1306 OLED display wired to `scl=Pin(22)` and `sda=Pin(21)`
+- HC-SR501 PIR sensor output wired to `GPIO27`
+- Button wired between `GPIO26` and `3.3V`
+- WiFi access for the weather screen
 - [`uv`](https://docs.astral.sh/uv/) for Python tool management
 - USB serial access to the board
 
@@ -37,17 +40,48 @@ make ls      # list files on the board
 make reset   # soft-reset the board
 ```
 
+## Hardware Pins
+
+The current pin layout is:
+
+```text
+OLED SCL -> GPIO22
+OLED SDA -> GPIO21
+PIR OUT  -> GPIO27
+Button   -> GPIO26
+```
+
+Use a shared ground rail for the ESP32, OLED, PIR sensor, and button circuit.
+The button input uses `Pin.PULL_DOWN`, so pressing the button should connect
+`GPIO26` to `3.3V`.
+
 ## Weather Setup
 
-The weather screen fetches current conditions from `wttr.in` over WiFi. Create a
-local `config.py` from the example and fill in your network details:
+The weather screen fetches current conditions from `wttr.in` over WiFi using
+the JSON endpoint. Create a local `config.py` from the example:
 
 ```sh
 cp config.example.py config.py
 ```
 
-Set `WTTR_LOCATION` to a city, airport code, or coordinates. Leave it empty to
-let `wttr.in` infer the location from the public IP address.
+Then set:
+
+```python
+WIFI_SSID = "your-wifi-name"
+WIFI_PASSWORD = "your-wifi-password"
+WTTR_LOCATION = "Santo Domingo"
+```
+
+`WTTR_LOCATION` can be a city, airport code, or coordinates. Leave it empty to
+let `wttr.in` infer the location from the public IP address. The app refreshes
+weather data every 10 minutes and shows description, temperature, feels-like
+temperature, and humidity.
+
+Deploy both the app files and your local config to the board:
+
+```sh
+make deploy
+```
 
 ## Project Layout
 
@@ -55,6 +89,7 @@ let `wttr.in` infer the location from the public IP address.
 - `face.py`: defines the reusable `Face` class.
 - `faces.py`: composes named expressions such as `neutral`, `winky`, and `scary`.
 - `eyes.py`: stores eye bitmap byte arrays and `framebuf.FrameBuffer` objects.
+- `config.example.py`: template for WiFi credentials and `wttr.in` location.
 - `Makefile`: wraps common `mpremote` workflows.
 
 ## Development Notes
