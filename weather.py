@@ -1,4 +1,3 @@
-import json
 import time
 
 try:
@@ -19,6 +18,8 @@ except ImportError:
 
 REFRESH_MS = 10 * 60 * 1000
 RETRY_MS = 30 * 1000
+WTTR_FORMAT = "%C|%t|%f|%h"
+MAX_WEATHER_RESPONSE_BYTES = 4096
 
 
 def _ticks_diff(now, then):
@@ -30,18 +31,53 @@ def _ticks_diff(now, then):
 def wttr_url(location=""):
     location = location.strip().replace(" ", "+")
     if location:
-        return "http://wttr.in/{}?format=j1".format(location)
-    return "http://wttr.in/?format=j1"
+        return "http://wttr.in/{}?m&format={}".format(location, WTTR_FORMAT)
+    return "http://wttr.in/?m&format={}".format(WTTR_FORMAT)
 
 
-def _parse_current(payload):
-    current = payload["current_condition"][0]
+def _strip_unit(value, unit):
+    value = value.strip()
+    value = value.replace("\xc2\xb0", "")
+    value = value.replace("\xb0", "")
+    value = value.replace(unit, "")
+    value = value.strip()
+    if value.startswith("+"):
+        value = value[1:]
+    return value
+
+
+def _parse_current(text):
+    if isinstance(text, bytes):
+        text = text.decode()
+
+    lines = text.strip().splitlines()
+    if not lines:
+        raise OSError("empty weather response")
+
+    parts = [part.strip() for part in lines[0].split("|")]
+    if len(parts) != 4:
+        raise OSError("invalid weather response")
+
+    description, temp_c, feels_c, humidity = parts
     return {
-        "description": current["weatherDesc"][0]["value"],
-        "temp_c": current["temp_C"],
-        "feels_c": current["FeelsLikeC"],
-        "humidity": current["humidity"],
+        "description": description,
+        "temp_c": _strip_unit(temp_c, "C"),
+        "feels_c": _strip_unit(feels_c, "C"),
+        "humidity": _strip_unit(humidity, "%"),
     }
+
+
+def _response_text(response):
+    if hasattr(response, "text"):
+        return response.text
+
+    if hasattr(response, "content"):
+        content = response.content
+        if isinstance(content, bytes):
+            return content.decode()
+        return content
+
+    raise OSError("weather response has no text")
 
 
 def _fetch_with_requests(location, http, socket_module=default_socket, timeout_s=8):
@@ -52,7 +88,7 @@ def _fetch_with_requests(location, http, socket_module=default_socket, timeout_s
             socket_module.setdefaulttimeout(timeout_s)
             timeout_was_set = True
         response = http.get(wttr_url(location))
-        return _parse_current(response.json())
+        return _parse_current(_response_text(response))
     finally:
         if response:
             response.close()
@@ -84,7 +120,7 @@ def _socket_read(sock, size):
     return sock.recv(size)
 
 
-def _fetch_json_with_socket(url, socket_module=default_socket, timeout_s=8):
+def _fetch_text_with_socket(url, socket_module=default_socket, timeout_s=8):
     if socket_module is None:
         raise RuntimeError("socket module missing")
 
@@ -102,19 +138,23 @@ def _fetch_json_with_socket(url, socket_module=default_socket, timeout_s=8):
             "GET {} HTTP/1.0\r\n"
             "Host: {}\r\n"
             "User-Agent: gargamel-ai\r\n"
-            "Accept: application/json\r\n"
+            "Accept: text/plain\r\n"
             "Accept-Encoding: identity\r\n"
             "Connection: close\r\n\r\n"
         ).format(path, host)
         _socket_write(sock, request.encode())
 
         chunks = []
+        total_size = 0
         while True:
             chunk = _socket_read(sock, 512)
             if not chunk:
                 break
             if isinstance(chunk, str):
                 chunk = chunk.encode()
+            total_size += len(chunk)
+            if total_size > MAX_WEATHER_RESPONSE_BYTES:
+                raise OSError("weather response too large")
             chunks.append(chunk)
 
         raw_response = b"".join(chunks)
@@ -131,7 +171,7 @@ def _fetch_json_with_socket(url, socket_module=default_socket, timeout_s=8):
     if b" 200 " not in status_line:
         raise OSError("weather HTTP error")
 
-    return json.loads(body.decode())
+    return body.decode()
 
 
 def fetch_current(
@@ -143,8 +183,9 @@ def fetch_current(
     if requests_module is not None:
         return _fetch_with_requests(location, requests_module, socket_module, timeout_s)
 
-    payload = _fetch_json_with_socket(wttr_url(location), socket_module, timeout_s)
-    return _parse_current(payload)
+    return _parse_current(
+        _fetch_text_with_socket(wttr_url(location), socket_module, timeout_s)
+    )
 
 
 class WeatherService:

@@ -58,8 +58,8 @@ resetting the board, because that can enter firmware flashing mode.
 
 ## Weather Setup
 
-The weather screen fetches current conditions from `wttr.in` over WiFi using
-the JSON endpoint. Create a local `config.py` from the example:
+The weather screen fetches current conditions from `wttr.in` over WiFi using a
+compact text format. Create a local `config.py` from the example:
 
 ```sh
 cp config.example.py config.py
@@ -74,9 +74,9 @@ WTTR_LOCATION = "Santo Domingo"
 ```
 
 `WTTR_LOCATION` can be a city, airport code, or coordinates. Leave it empty to
-let `wttr.in` infer the location from the public IP address. The app refreshes
-weather data every 10 minutes and shows description, temperature, feels-like
-temperature, and humidity.
+let `wttr.in` infer the location from the public IP address. The app requests
+metric units, refreshes weather data every 10 minutes, and shows description,
+temperature, feels-like temperature, and humidity.
 
 Deploy both the app files and your local config to the board:
 
