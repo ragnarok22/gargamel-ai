@@ -2,7 +2,7 @@ PORT ?= /dev/cu.usbserial-0001
 PYTHON ?= python3
 MPREMOTE = uv run mpremote connect $(PORT)
 
-.PHONY: help run deploy repl ls reset test lint format
+.PHONY: help run deploy repl ls reset test coverage lint format
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2}'
@@ -24,6 +24,10 @@ reset: ## Soft-reset the device
 
 test: ## Run the unit test suite
 	$(PYTHON) -m unittest discover -s tests
+
+coverage: ## Run tests with coverage report
+	uv run coverage run -m unittest discover -s tests
+	uv run coverage report -m
 
 lint: ## Lint with ruff
 	uv run ruff check .

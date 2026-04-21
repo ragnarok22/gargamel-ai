@@ -13,6 +13,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "micropython-esp32-stubs>=1.28.0.post1",
+    "coverage>=7.0",
     "ruff>=0.15.11",
 ]
 
