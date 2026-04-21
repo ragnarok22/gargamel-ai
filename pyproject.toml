@@ -13,7 +13,15 @@ dependencies = [
 [dependency-groups]
 dev = [
     "micropython-esp32-stubs>=1.28.0.post1",
+    "ruff>=0.15.11",
 ]
+
+[tool.ruff]
+line-length = 88
+target-version = "py314"
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
 
 [tool.pyright]
 include = ["."]
