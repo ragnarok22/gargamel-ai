@@ -1,7 +1,8 @@
 PORT ?= /dev/cu.usbserial-0001
+PYTHON ?= python3
 MPREMOTE = uv run mpremote connect $(PORT)
 
-.PHONY: help run deploy repl ls reset
+.PHONY: help run deploy repl ls reset test
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2}'
@@ -20,3 +21,6 @@ ls: ## List files on the device filesystem
 
 reset: ## Soft-reset the device
 	$(MPREMOTE) reset
+
+test: ## Run the unit test suite
+	$(PYTHON) -m unittest discover -s tests
