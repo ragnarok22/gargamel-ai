@@ -12,7 +12,7 @@ run: ## Run main.py on the device (does not save it)
 	$(MPREMOTE) mount . run main.py
 
 deploy: ## Copy all .py files to the device filesystem
-	$(MPREMOTE) $(foreach f,$(PY_FILES),+ fs cp $(f) :$(f))
+	$(MPREMOTE) $(foreach f,$(PY_FILES),+ fs cp $(f) :$(f)) + reset
 
 repl: ## Open an interactive MicroPython REPL
 	$(MPREMOTE) repl
