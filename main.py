@@ -3,7 +3,7 @@ import time
 import ssd1306
 from machine import I2C, Pin
 
-from faces import neutral, scary, winky
+from faces import happy, neutral, scary, sleepy, surprised, suspicious, winky
 from weather import WeatherService
 from wifi import connect_wifi
 
@@ -29,6 +29,10 @@ button = Pin(0, Pin.IN, Pin.PULL_UP)
 
 weather_service = WeatherService(WTTR_LOCATION)
 next_screen_requested = False
+idle_face_index = 0
+active_face_index = 0
+IDLE_FACES = (neutral, sleepy, suspicious)
+ACTIVE_FACES = (surprised, happy, winky, suspicious, scary)
 
 
 def button_pressed():
@@ -45,14 +49,19 @@ def request_next_screen():
 
 
 def face():
+    global active_face_index, idle_face_index
+
     print(pir.value())
     if pir.value():
-        if not scary.animate(oled, should_stop=request_next_screen):
-            return
-        winky.animate(oled, should_stop=request_next_screen)
+        current_face = ACTIVE_FACES[active_face_index]
+        active_face_index = (active_face_index + 1) % len(ACTIVE_FACES)
+        current_face.animate(oled, should_stop=request_next_screen)
     else:
-        neutral.animate(oled, should_stop=request_next_screen)
-        time.sleep_ms(200)
+        current_face = IDLE_FACES[idle_face_index]
+        idle_face_index = (idle_face_index + 1) % len(IDLE_FACES)
+        completed = current_face.animate(oled, should_stop=request_next_screen)
+        if completed:
+            time.sleep_ms(200)
 
 
 def draw_message(title, line_1="", line_2="", line_3=""):
