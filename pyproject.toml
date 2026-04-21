@@ -1,7 +1,7 @@
 [project]
 name = "gargamel-ai"
 version = "0.1.0"
-description = "Add your description here"
+description = "MicroPython face animations and weather display for an ESP32 SSD1306 OLED"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
@@ -12,8 +12,9 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "micropython-esp32-stubs>=1.28.0.post1",
     "coverage>=7.0",
+    "micropython-esp32-stubs>=1.28.0.post1",
+    "pyright>=1.1.407",
     "ruff>=0.15.11",
 ]
 
@@ -26,10 +27,11 @@ select = ["E", "F", "I"]
 
 [tool.pyright]
 include = ["."]
-exclude = [".venv", "__pycache__"]
+exclude = [".venv", "__pycache__", "typings"]
 
 typeCheckingMode = "basic"
-stubPath = "typings"
-typeshedPath = "typings"
+pythonVersion = "3.14"
+venv = ".venv"
+venvPath = "."
 pythonPlatform = "Linux"
 reportMissingModuleSource = "none"
