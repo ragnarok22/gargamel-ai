@@ -1,26 +1,18 @@
 import time
-import network
 import ssd1306
 from machine import I2C, Pin
 from faces import neutral, winky, scary
+from weather import WeatherService
+from wifi import connect_wifi
 
 try:
     import config
 except ImportError:
     config = None
 
-try:
-    import urequests as requests
-except ImportError:
-    try:
-        import requests
-    except ImportError:
-        requests = None
-
 WIFI_SSID = getattr(config, "WIFI_SSID", "")
 WIFI_PASSWORD = getattr(config, "WIFI_PASSWORD", "")
 WTTR_LOCATION = getattr(config, "WTTR_LOCATION", "")
-WEATHER_REFRESH_MS = 10 * 60 * 1000
 
 # --- DEFINITIONS OF PINS ---
 # screen
@@ -33,10 +25,7 @@ pir = Pin(27, Pin.IN)
 # built-in BOOT button
 button = Pin(0, Pin.IN, Pin.PULL_UP)
 
-wlan = network.WLAN(network.STA_IF)
-last_weather_fetch = 0
-weather_data = None
-weather_error = None
+weather_service = WeatherService(WTTR_LOCATION)
 
 
 def face():
@@ -61,101 +50,41 @@ def draw_message(title, line_1="", line_2="", line_3=""):
     oled.show()
 
 
-def connect_wifi():
-    if wlan.isconnected():
-        return True
-
-    if not WIFI_SSID:
-        draw_message("Weather", "Set config.py", "WIFI_SSID")
-        return False
-
-    try:
-        wlan.active(True)
-        wlan.connect(WIFI_SSID, WIFI_PASSWORD)
-    except OSError as error:
-        print("WiFi error:", error)
-        draw_message("Weather", "WiFi failed")
-        return False
-
-    draw_message("Weather", "WiFi...", WIFI_SSID)
-
-    started = time.ticks_ms()
-    while not wlan.isconnected():
-        if time.ticks_diff(time.ticks_ms(), started) > 15000:
-            draw_message("Weather", "WiFi failed")
-            return False
-        time.sleep_ms(250)
-
-    return True
-
-
-def wttr_url():
-    location = WTTR_LOCATION.strip().replace(" ", "+")
-    if location:
-        return "http://wttr.in/{}?format=j1".format(location)
-    return "http://wttr.in/?format=j1"
-
-
-def fetch_weather():
-    if requests is None:
-        raise RuntimeError("requests missing")
-
-    response = None
-    try:
-        response = requests.get(wttr_url())
-        payload = response.json()
-        current = payload["current_condition"][0]
-        description = current["weatherDesc"][0]["value"]
-        return {
-            "description": description,
-            "temp_c": current["temp_C"],
-            "feels_c": current["FeelsLikeC"],
-            "humidity": current["humidity"],
-        }
-    finally:
-        if response:
-            response.close()
-
-
-def weather():
-    global last_weather_fetch, weather_data, weather_error
-
+def show_weather():
     now = time.ticks_ms()
-    should_fetch = (
-        weather_data is None
-        or time.ticks_diff(now, last_weather_fetch) > WEATHER_REFRESH_MS
-    )
+    if weather_service.should_refresh(now):
+        if not connect_wifi(WIFI_SSID, WIFI_PASSWORD, on_status=draw_message):
+            weather_service.set_error("WiFi failed", now)
+        else:
+            draw_message("Weather", "Fetching wttr")
+            try:
+                weather_service.refresh(now)
+            except Exception as error:
+                weather_service.set_error(error, now)
 
-    if should_fetch:
-        last_weather_fetch = now
-        if not connect_wifi():
-            time.sleep_ms(500)
-            return
-
-        draw_message("Weather", "Fetching wttr")
-        try:
-            weather_data = fetch_weather()
-            weather_error = None
-        except Exception as error:
-            weather_error = error
+    if weather_service.error:
+        print("Weather error:", weather_service.error)
 
     oled.fill(0)
     oled.text("Weather", 0, 0)
 
-    if weather_error:
-        oled.text("Fetch error", 0, 18)
+    if weather_service.error:
+        oled.text(str(weather_service.error)[:16], 0, 18)
         oled.text("Check WiFi/API", 0, 32)
-        print("Weather error:", weather_error)
-    elif weather_data:
-        oled.text(weather_data["description"][:16], 0, 14)
-        oled.text("Temp: {} C".format(weather_data["temp_c"]), 0, 28)
-        oled.text("Feels:{} C".format(weather_data["feels_c"]), 0, 40)
-        oled.text("Hum:  {} %".format(weather_data["humidity"]), 0, 52)
+    elif weather_service.data:
+        oled.text(weather_service.data["description"][:16], 0, 14)
+        oled.text("Temp: {} C".format(weather_service.data["temp_c"]), 0, 28)
+        oled.text("Feels:{} C".format(weather_service.data["feels_c"]), 0, 40)
+        oled.text("Hum:  {} %".format(weather_service.data["humidity"]), 0, 52)
     else:
         oled.text("No data", 0, 18)
 
     oled.show()
     time.sleep_ms(200)
+
+
+def weather():
+    show_weather()
 
 
 def main():

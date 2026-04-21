@@ -1,40 +1,6 @@
-import importlib
-import sys
-import types
 import unittest
 
-
-class FakePin:
-    IN = 0
-    PULL_UP = 1
-    PULL_DOWN = 2
-
-    def __init__(self, *args):
-        pass
-
-    def value(self):
-        return 0
-
-
-class FakeI2C:
-    def __init__(self, *args, **kwargs):
-        pass
-
-
-class FakeOled:
-    def fill(self, color):
-        pass
-
-    def text(self, text, x, y):
-        pass
-
-    def show(self):
-        pass
-
-
-class FakeFace:
-    def animate(self, oled):
-        pass
+from wifi import connect_wifi
 
 
 class FailingWlan:
@@ -48,36 +14,46 @@ class FailingWlan:
         raise OSError("wifi radio unavailable")
 
 
-def load_main():
-    sys.modules.pop("main", None)
-    sys.modules["machine"] = types.SimpleNamespace(Pin=FakePin, I2C=FakeI2C)
-    sys.modules["network"] = types.SimpleNamespace(
-        STA_IF=0,
-        WLAN=lambda interface: FailingWlan(),
-    )
-    sys.modules["ssd1306"] = types.SimpleNamespace(
-        SSD1306_I2C=lambda width, height, i2c: FakeOled(),
-    )
-    sys.modules["faces"] = types.SimpleNamespace(
-        neutral=FakeFace(),
-        winky=FakeFace(),
-        scary=FakeFace(),
-    )
-    return importlib.import_module("main")
+class ConnectedWlan:
+    def isconnected(self):
+        return True
+
+    def active(self, enabled):
+        raise AssertionError("active should not be called when already connected")
+
+    def connect(self, ssid, password):
+        raise AssertionError("connect should not be called when already connected")
 
 
 class ConnectWifiTest(unittest.TestCase):
-    def test_connect_wifi_handles_connect_error(self):
-        main = load_main()
+    def test_handles_connect_error(self):
         messages = []
 
-        main.WIFI_SSID = "test-network"
-        main.WIFI_PASSWORD = "test-password"
-        main.wlan = FailingWlan()
-        main.draw_message = lambda *parts: messages.append(parts)
+        connected = connect_wifi(
+            "test-network",
+            "test-password",
+            wlan=FailingWlan(),
+            on_status=lambda *parts: messages.append(parts),
+        )
 
-        self.assertFalse(main.connect_wifi())
-        self.assertIn(("Weather", "WiFi failed"), messages)
+        self.assertFalse(connected)
+        self.assertIn(("Weather", "WiFi failed", "", ""), messages)
+
+    def test_returns_true_when_already_connected(self):
+        self.assertTrue(connect_wifi("", "", wlan=ConnectedWlan()))
+
+    def test_missing_ssid_shows_config_message(self):
+        messages = []
+
+        connected = connect_wifi(
+            "",
+            "",
+            wlan=FailingWlan(),
+            on_status=lambda *parts: messages.append(parts),
+        )
+
+        self.assertFalse(connected)
+        self.assertIn(("Weather", "Set config.py", "WIFI_SSID", ""), messages)
 
 
 if __name__ == "__main__":
