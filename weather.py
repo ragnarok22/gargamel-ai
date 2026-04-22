@@ -1,5 +1,3 @@
-import time
-
 from utils import _ticks_diff
 
 try:

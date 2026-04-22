@@ -61,7 +61,11 @@ def face():
     else:
         current_face = IDLE_FACES[idle_face_index]
         idle_face_index = (idle_face_index + 1) % len(IDLE_FACES)
-        completed = current_face.animate(oled, should_stop=request_next_screen)
+
+        def _should_stop():
+            return request_next_screen() or pir.value() == 1
+
+        completed = current_face.animate(oled, should_stop=_should_stop)
         if completed:
             time.sleep_ms(200)
 
