@@ -54,11 +54,7 @@ def face():
     is_someone = pir.value() == 1
     print(f"{'There is someone' if is_someone else 'There is no one'}")
 
-    if is_someone:
-        current_face = ACTIVE_FACES[active_face_index]
-        active_face_index = (active_face_index + 1) % len(ACTIVE_FACES)
-        current_face.animate(oled, should_stop=request_next_screen)
-    else:
+    if not is_someone:
         current_face = IDLE_FACES[idle_face_index]
         idle_face_index = (idle_face_index + 1) % len(IDLE_FACES)
 
@@ -68,6 +64,13 @@ def face():
         completed = current_face.animate(oled, should_stop=_should_stop)
         if completed:
             time.sleep_ms(200)
+
+        is_someone = pir.value() == 1
+
+    if is_someone:
+        current_face = ACTIVE_FACES[active_face_index]
+        active_face_index = (active_face_index + 1) % len(ACTIVE_FACES)
+        current_face.animate(oled, should_stop=request_next_screen)
 
 
 def draw_message(title, line_1="", line_2="", line_3=""):
